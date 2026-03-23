@@ -358,7 +358,7 @@ func runDaemon() error {
 	cmd := exec.Command(exe, "start", "-f")
 	cmd.Stdout = lf
 	cmd.Stderr = lf
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	cmd.SysProcAttr = daemonSysProcAttr()
 
 	if err := cmd.Start(); err != nil {
 		lf.Close()
@@ -396,6 +396,5 @@ func processExists(pid int) bool {
 	if err != nil {
 		return false
 	}
-	// Signal 0 checks if process exists without killing it
-	return p.Signal(syscall.Signal(0)) == nil
+	return processExistsForPlatform(p)
 }
