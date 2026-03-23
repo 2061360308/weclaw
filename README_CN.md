@@ -82,6 +82,14 @@ docker run -it -v ~/.weclaw:/root/.weclaw ghcr.io/fastclaw-ai/weclaw start
 
 切换默认 Agent 会写入配置文件，重启后仍然生效。
 
+## 富媒体消息
+
+WeClaw 支持向微信发送图片、视频和文件。
+
+**Agent 回复自动处理：** 当 AI Agent 返回包含图片的 markdown（`![](url)`）时，WeClaw 会自动提取图片 URL，下载文件，上传到微信 CDN（AES-128-ECB 加密），然后作为图片消息发送。
+
+**Markdown 转换：** Agent 的回复会自动从 markdown 转为纯文本再发送 — 代码块去掉围栏、链接只保留文字、加粗斜体标记去除等。
+
 ## 主动推送消息
 
 无需等待用户发消息，主动向微信用户推送消息。
@@ -89,16 +97,39 @@ docker run -it -v ~/.weclaw:/root/.weclaw ghcr.io/fastclaw-ai/weclaw start
 **命令行：**
 
 ```bash
+# 发送文本
 weclaw send --to "user_id@im.wechat" --text "你好，来自 weclaw"
+
+# 发送图片
+weclaw send --to "user_id@im.wechat" --media "https://example.com/photo.png"
+
+# 发送文本 + 图片
+weclaw send --to "user_id@im.wechat" --text "看看这个" --media "https://example.com/photo.png"
+
+# 发送文件
+weclaw send --to "user_id@im.wechat" --media "https://example.com/report.pdf"
 ```
 
 **HTTP API**（`weclaw start` 运行时，默认监听 `127.0.0.1:18011`）：
 
 ```bash
+# 发送文本
 curl -X POST http://127.0.0.1:18011/api/send \
   -H "Content-Type: application/json" \
   -d '{"to": "user_id@im.wechat", "text": "你好，来自 weclaw"}'
+
+# 发送图片
+curl -X POST http://127.0.0.1:18011/api/send \
+  -H "Content-Type: application/json" \
+  -d '{"to": "user_id@im.wechat", "media_url": "https://example.com/photo.png"}'
+
+# 发送文本 + 媒体
+curl -X POST http://127.0.0.1:18011/api/send \
+  -H "Content-Type: application/json" \
+  -d '{"to": "user_id@im.wechat", "text": "看看这个", "media_url": "https://example.com/photo.png"}'
 ```
+
+支持的媒体类型：图片（png、jpg、gif、webp）、视频（mp4、mov）、文件（pdf、doc、zip 等）。
 
 设置 `WECLAW_API_ADDR` 环境变量可更改监听地址（如 `0.0.0.0:18011`）。
 

@@ -83,6 +83,35 @@ type MessageItem struct {
 	Type      int        `json:"type"`
 	TextItem  *TextItem  `json:"text_item,omitempty"`
 	ImageItem *ImageItem `json:"image_item,omitempty"`
+	VideoItem *VideoItem `json:"video_item,omitempty"`
+	FileItem  *FileItem  `json:"file_item,omitempty"`
+}
+
+// CDN media type constants.
+const (
+	CDNMediaTypeImage = 1
+	CDNMediaTypeVideo = 2
+	CDNMediaTypeFile  = 3
+)
+
+// GetUploadURLRequest is the body for getuploadurl.
+type GetUploadURLRequest struct {
+	FileKey     string   `json:"filekey"`
+	MediaType   int      `json:"media_type"`
+	ToUserID    string   `json:"to_user_id"`
+	RawSize     int      `json:"rawsize"`
+	RawFileMD5  string   `json:"rawfilemd5"`
+	FileSize    int      `json:"filesize"`
+	NoNeedThumb bool     `json:"no_need_thumb"`
+	AESKey      string   `json:"aeskey"`
+	BaseInfo    BaseInfo `json:"base_info"`
+}
+
+// GetUploadURLResponse is the response from getuploadurl.
+type GetUploadURLResponse struct {
+	Ret         int    `json:"ret"`
+	ErrMsg      string `json:"errmsg,omitempty"`
+	UploadParam string `json:"upload_param"`
 }
 
 // TextItem holds text content.
@@ -90,9 +119,31 @@ type TextItem struct {
 	Text string `json:"text"`
 }
 
+// MediaInfo holds CDN media reference for uploaded files.
+type MediaInfo struct {
+	EncryptQueryParam string `json:"encrypt_query_param"`
+	AESKey            string `json:"aes_key"`    // base64-encoded
+	EncryptType       int    `json:"encrypt_type"` // 1 = AES-128-ECB
+}
+
 // ImageItem holds image content.
 type ImageItem struct {
-	URL string `json:"url,omitempty"`
+	URL     string     `json:"url,omitempty"`
+	Media   *MediaInfo `json:"media,omitempty"`
+	MidSize int        `json:"mid_size,omitempty"` // ciphertext size
+}
+
+// VideoItem holds video content.
+type VideoItem struct {
+	Media     *MediaInfo `json:"media,omitempty"`
+	VideoSize int        `json:"video_size,omitempty"`
+}
+
+// FileItem holds file content.
+type FileItem struct {
+	Media    *MediaInfo `json:"media,omitempty"`
+	FileName string     `json:"file_name,omitempty"`
+	Len      string     `json:"len,omitempty"` // plaintext size as string
 }
 
 // SendMessageRequest is the body for sendmessage.

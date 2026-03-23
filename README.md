@@ -81,6 +81,14 @@ Send these as WeChat messages:
 
 Switching default agent is persisted to config — survives restarts.
 
+## Media Messages
+
+WeClaw supports sending images, videos, and files to WeChat.
+
+**From agent replies:** When an AI agent returns markdown with images (`![](url)`), WeClaw automatically extracts the image URLs, downloads them, uploads to WeChat CDN (AES-128-ECB encrypted), and sends them as image messages.
+
+**Markdown handling:** Agent responses are automatically converted from markdown to plain text for WeChat display — code fences are stripped, links show display text only, bold/italic markers are removed, etc.
+
 ## Proactive Messaging
 
 Send messages to WeChat users without waiting for them to message first.
@@ -88,16 +96,39 @@ Send messages to WeChat users without waiting for them to message first.
 **CLI:**
 
 ```bash
+# Send text
 weclaw send --to "user_id@im.wechat" --text "Hello from weclaw"
+
+# Send image
+weclaw send --to "user_id@im.wechat" --media "https://example.com/photo.png"
+
+# Send text + image
+weclaw send --to "user_id@im.wechat" --text "Check this out" --media "https://example.com/photo.png"
+
+# Send file
+weclaw send --to "user_id@im.wechat" --media "https://example.com/report.pdf"
 ```
 
 **HTTP API** (runs on `127.0.0.1:18011` when `weclaw start` is running):
 
 ```bash
+# Send text
 curl -X POST http://127.0.0.1:18011/api/send \
   -H "Content-Type: application/json" \
   -d '{"to": "user_id@im.wechat", "text": "Hello from weclaw"}'
+
+# Send image
+curl -X POST http://127.0.0.1:18011/api/send \
+  -H "Content-Type: application/json" \
+  -d '{"to": "user_id@im.wechat", "media_url": "https://example.com/photo.png"}'
+
+# Send text + media
+curl -X POST http://127.0.0.1:18011/api/send \
+  -H "Content-Type: application/json" \
+  -d '{"to": "user_id@im.wechat", "text": "See this", "media_url": "https://example.com/photo.png"}'
 ```
+
+Supported media types: images (png, jpg, gif, webp), videos (mp4, mov), files (pdf, doc, zip, etc.).
 
 Set `WECLAW_API_ADDR` to change the listen address (e.g. `0.0.0.0:18011`).
 

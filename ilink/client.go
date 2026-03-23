@@ -126,6 +126,23 @@ func (c *Client) SendTyping(ctx context.Context, userID, typingTicket string, st
 	return nil
 }
 
+// GetUploadURL gets a pre-signed CDN upload URL for media files.
+func (c *Client) GetUploadURL(ctx context.Context, req *GetUploadURLRequest) (*GetUploadURLResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, sendTimeout)
+	defer cancel()
+
+	var resp GetUploadURLResponse
+	if err := c.doPost(ctx, "/ilink/bot/getuploadurl", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// BaseURL returns the base URL for CDN operations.
+func (c *Client) BaseURL() string {
+	return c.baseURL
+}
+
 func (c *Client) doPost(ctx context.Context, path string, body interface{}, result interface{}) error {
 	data, err := json.Marshal(body)
 	if err != nil {

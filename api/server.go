@@ -27,8 +27,9 @@ func NewServer(clients []*ilink.Client, addr string) *Server {
 
 // SendRequest is the JSON body for POST /api/send.
 type SendRequest struct {
-	To   string `json:"to"`
-	Text string `json:"text"`
+	To       string `json:"to"`
+	Text     string `json:"text,omitempty"`
+	MediaURL string `json:"media_url,omitempty"` // image/video/file URL
 }
 
 // Run starts the HTTP server. Blocks until ctx is cancelled.
@@ -66,8 +67,12 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.To == "" || req.Text == "" {
-		http.Error(w, `"to" and "text" are required`, http.StatusBadRequest)
+	if req.To == "" {
+		http.Error(w, `"to" is required`, http.StatusBadRequest)
+		return
+	}
+	if req.Text == "" && req.MediaURL == "" {
+		http.Error(w, `"text" or "media_url" is required`, http.StatusBadRequest)
 		return
 	}
 
@@ -78,13 +83,28 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 
 	// Use the first client
 	client := s.clients[0]
-	if err := messaging.SendTextReply(r.Context(), client, req.To, req.Text, "", ""); err != nil {
-		log.Printf("[api] send failed: %v", err)
-		http.Error(w, "send failed: "+err.Error(), http.StatusInternalServerError)
-		return
+	ctx := r.Context()
+
+	// Send text if provided
+	if req.Text != "" {
+		if err := messaging.SendTextReply(ctx, client, req.To, req.Text, "", ""); err != nil {
+			log.Printf("[api] send text failed: %v", err)
+			http.Error(w, "send text failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Printf("[api] sent text to %s: %q", req.To, req.Text)
 	}
 
-	log.Printf("[api] sent message to %s: %q", req.To, req.Text)
+	// Send media if provided
+	if req.MediaURL != "" {
+		if err := messaging.SendMediaFromURL(ctx, client, req.To, req.MediaURL, ""); err != nil {
+			log.Printf("[api] send media failed: %v", err)
+			http.Error(w, "send media failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Printf("[api] sent media to %s: %s", req.To, req.MediaURL)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }

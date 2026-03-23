@@ -12,23 +12,30 @@ import (
 )
 
 var (
-	sendTo   string
-	sendText string
+	sendTo       string
+	sendText     string
+	sendMediaURL string
 )
 
 func init() {
 	sendCmd.Flags().StringVar(&sendTo, "to", "", "Target user ID (ilink user ID)")
 	sendCmd.Flags().StringVar(&sendText, "text", "", "Message text to send")
+	sendCmd.Flags().StringVar(&sendMediaURL, "media", "", "Media URL to send (image/video/file)")
 	sendCmd.MarkFlagRequired("to")
-	sendCmd.MarkFlagRequired("text")
 	rootCmd.AddCommand(sendCmd)
 }
 
 var sendCmd = &cobra.Command{
 	Use:   "send",
 	Short: "Send a message to a WeChat user",
-	Example: `  weclaw send --to "user_id@im.wechat" --text "Hello from weclaw"`,
+	Example: `  weclaw send --to "user_id@im.wechat" --text "Hello"
+  weclaw send --to "user_id@im.wechat" --media "https://example.com/image.png"
+  weclaw send --to "user_id@im.wechat" --text "See this" --media "https://example.com/image.png"`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if sendText == "" && sendMediaURL == "" {
+			return fmt.Errorf("at least one of --text or --media is required")
+		}
+
 		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 		defer cancel()
 
@@ -40,13 +47,22 @@ var sendCmd = &cobra.Command{
 			return fmt.Errorf("no accounts found, run 'weclaw start' first")
 		}
 
-		// Use the first account
 		client := ilink.NewClient(accounts[0])
-		if err := messaging.SendTextReply(ctx, client, sendTo, sendText, "", ""); err != nil {
-			return fmt.Errorf("send failed: %w", err)
+
+		if sendText != "" {
+			if err := messaging.SendTextReply(ctx, client, sendTo, sendText, "", ""); err != nil {
+				return fmt.Errorf("send text failed: %w", err)
+			}
+			fmt.Println("Text sent")
 		}
 
-		fmt.Println("Message sent")
+		if sendMediaURL != "" {
+			if err := messaging.SendMediaFromURL(ctx, client, sendTo, sendMediaURL, ""); err != nil {
+				return fmt.Errorf("send media failed: %w", err)
+			}
+			fmt.Println("Media sent")
+		}
+
 		return nil
 	},
 }

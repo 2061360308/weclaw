@@ -237,9 +237,19 @@ func (h *Handler) HandleMessage(ctx context.Context, client *ilink.Client, msg i
 		reply = fmt.Sprintf("Error: %v", err)
 	}
 
-	// Send final reply with same clientID (completes the typing → finish flow)
+	// Extract image URLs from markdown before converting to plain text
+	imageURLs := ExtractImageURLs(reply)
+
+	// Send final text reply with same clientID (completes the typing → finish flow)
 	if err := SendTextReply(ctx, client, msg.FromUserID, reply, msg.ContextToken, clientID); err != nil {
 		log.Printf("[handler] failed to send reply to %s: %v", msg.FromUserID, err)
+	}
+
+	// Send extracted images as separate media messages
+	for _, imgURL := range imageURLs {
+		if err := SendMediaFromURL(ctx, client, msg.FromUserID, imgURL, msg.ContextToken); err != nil {
+			log.Printf("[handler] failed to send image to %s: %v", msg.FromUserID, err)
+		}
 	}
 }
 

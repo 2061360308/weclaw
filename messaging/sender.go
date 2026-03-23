@@ -42,6 +42,9 @@ func SendTextReply(ctx context.Context, client *ilink.Client, toUserID, text, co
 		clientID = NewClientID()
 	}
 
+	// Convert markdown to plain text for WeChat display
+	plainText := MarkdownToPlainText(text)
+
 	req := &ilink.SendMessageRequest{
 		Msg: ilink.SendMsg{
 			FromUserID:   client.BotID(),
@@ -53,7 +56,7 @@ func SendTextReply(ctx context.Context, client *ilink.Client, toUserID, text, co
 				{
 					Type: ilink.ItemTypeText,
 					TextItem: &ilink.TextItem{
-						Text: text,
+						Text: plainText,
 					},
 				},
 			},
